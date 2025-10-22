@@ -1,0 +1,70 @@
+val genai = peval("__import__('google.genai').genai")
+require http
+require "C:\nyra\modules\web.nyra"
+require osio::{ open }
+
+func handle_request(req, res)
+{
+  client := genai.Client(api_key="ur api key here!!")
+    mut prompt = ""
+  
+    with open("prompt.txt", "r") as f
+    {
+        prompt = f.read()
+    }
+
+    switch(req.path)
+    {
+        case "/"
+        {
+            Web::render("index.html", res)
+        }
+
+        case "/api/new"
+        {
+            if (req.method == "POST")
+            {
+                val question = req.params["question"] ?? ""
+                if (question == "")
+                {
+                    Web::sendStatus(400, res, "please add a question when doing post request!!!")
+                } 
+                else 
+                {
+                    try {
+                        val response = client.models.generate_content(
+                            model="gemini-2.5-flash",
+                            contents=prompt + " Someone has told you something! Here is what they said: " + question
+                        )
+                        res.json({"response": response.text})
+                    } catch(err) {
+                        println("error: " + err.message)
+                        Web::sendStatus(500, res, "error generating response: " + err.message)
+                    }
+                }
+            } 
+            else
+            {
+                Web::sendStatus(405, res, "method is NOT allowed... try using a post request LMFAO")
+            }
+        }
+
+        default
+        {
+            Web::sendStatus(404, res, "couldn't find \"#{req.path}\" on the server")
+        }
+    }
+}
+
+func main() : int
+{
+    try {
+        val server = http.run_server_in_background(8080, handle_request)
+        readln("press enter to stop..")
+        http.stop_server(server)
+    } catch(err) {
+        println(err.message)
+        return 1
+    }
+    return 0 
+}
