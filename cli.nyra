@@ -1,0 +1,23 @@
+require requests
+require rich
+
+func main()
+{
+    val url = readln("Server URL? (ex: http://127.0.0.1:5000) ")
+    val question = readln("Question? ")
+
+    val data = {'question': question}
+    val response = requests.post(url + "/api/new", data=data)
+    val result = response.json()
+
+    if includes(result, "response")
+    {
+        rich.print(result["response"])
+    }
+    else
+    {
+        rich.print("error: 'response' key not found in server response")
+    }
+
+    return 0
+}
